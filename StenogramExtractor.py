@@ -7,8 +7,7 @@ import sys
 import os
 import re
 
-month_dict = { "януари": 1, "февруари": 2,  "март": 3, "април": 4, "май": 5, "юни": 6,
-               "юли": 7, "август": 8, "септември": 9, "октомври": 10, "ноември": 11, "декември": 12}  
+month_dict = { "ноември": 11, "декември": 12}  
 
 def StenogramExtractorMain(yearToQuery):
     driver = webdriver.Edge()
@@ -34,7 +33,7 @@ def StenogramExtractorMain(yearToQuery):
 
         for date in range(1, 32):
             wait.until(EC.presence_of_element_located((By.XPATH, f"//span[contains(text(), '{month} {yearToQuery}')]")))
-            wait.until(EC.presence_of_element_located((By.XPATH, f"//a[contains(text(), '{monthNum:02}/{yearToQuery} Стенограма от пленарно')]")))
+            wait.until(EC.presence_of_element_located((By.XPATH, f"//a[contains(text(), '/{monthNum:02}/{yearToQuery}')]")))
             
             filePath = f"{yearToQuery}/{monthNum}"
             stenogramLink = GetStenogramLink(driver, yearToQuery, monthNum, date)
