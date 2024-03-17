@@ -2,54 +2,54 @@ import sys
 import os
 from datetime import datetime
 import re
+import json
+from Levenshtein import distance
 
-def GetFileNames(yearToQuery):
+def GetFileNames(yearToQuery, monthToQuery):
     files = []
     directory = f'{yearToQuery}'
     for subdir in os.listdir(directory):
-        subDirectory = os.path.join(directory, subdir)
-        for filename in os.listdir(subDirectory):
-            f = os.path.join(subDirectory, filename)
-            # checking if it is a file
-            if os.path.isfile(f):
-                files.append(f)
+        if (int(subdir) >= int(monthToQuery)):
+            subDirectory = os.path.join(directory, subdir)
+            for filename in os.listdir(subDirectory):
+                f = os.path.join(subDirectory, filename)
+                # checking if it is a file
+                if os.path.isfile(f):
+                    files.append(f)
     return files
 
-def PartyTextExtractorMain(yearToQuery):
-    partyDict = {"български възход": "bulgarski_vuzhod", 
-                "бсп за българия": "BSP",
-                "възраждане": "vuzrazhdane",
-                "герб-сдс": "GERB-SDS",
-                "да българия": "DB",
-                "дб": "DB",
-                "дпс": "DPS",
-                "итн": "ITN",
-                "продължаваме промяната": "PP",
-                "пп": "PP",
-                "пп-дб": "PP-DB"}
+def PartyTextExtractorMain(yearToQuery, monthToQuery):
+    # reading the data from the file 
+    with open('partyFileNameDict.json', encoding='UTF-8') as f: 
+        partyData = f.read() 
 
-    fileNames = GetFileNames(yearToQuery)
+    # reconstructing the data as a dictionary 
+    partyDict = json.loads(partyData)
+
+    fileNames = GetFileNames(yearToQuery, monthToQuery)
     for fileName in fileNames:
+        print(fileName)
         with open(fileName, encoding = 'utf-8') as file:
-            # Regex: [А-Яа-я ]*\(([А-Яа-я -]*),*.*\):([\w\W]*?)(?:ПРЕДСЕДАТЕЛ|ИСКРА) - change ИСКРА to something that matches any name
-            for party in re.findall(r"[А-Яа-я ]*\(([А-Яа-я -]*),*.*\):", file.read()):
-                party = party.strip()
-                if "," in party.lower():
-                    party = party.replace(",", "")
-                if "от място" in party.lower():
-                    party = party.replace("от място", "")
-                if "встрани от микрофоните" in party.lower():
-                    party = party.replace("встрани от микрофоните", "")
-                if "реплика от" in party.lower():
-                    party = party.replace("Реплика от", "")
+            # Regex: "^([А-Я\s]+)(\(.*\))*:([\S\s]*?)(?=^([А-Я\s]+)(\(.*\))*:|\Z)"gm
+            for party in re.findall(r"^([А-Я\s]+)(\(.*\))*:([\S\s]*?)(?=^([А-Я\s]+)(\(.*\))*:|\Z)", file.read(), re.M):
+                partyFolder = None
+                partyNamePattern = r'^\(([А-Яа-я -]+),*.*\)$'
+                partyNameMatch = re.search(partyNamePattern, party[1])
+                if (partyNameMatch != None and partyNameMatch[1].upper() not in partyDict.keys()):
+                    cutoff = 2
+                    partyNameDistanceDict = {partyName : distance(partyNameMatch[1].upper(), partyName, score_cutoff=cutoff, weights=(0,1,5)) for partyName in partyDict}
+                    minimum = min(partyNameDistanceDict.items(), key=lambda x: x[1])
+                    if minimum[1] < cutoff + 1: partyFolder = partyDict[minimum[0]]                    
+                elif (partyNameMatch != None and partyNameMatch[1].upper() in partyDict.keys()):
+                    partyFolder = partyDict[partyNameMatch[1].upper()]
 
-                if party.lower() in partyDict.keys():
-                    print(f"HIT: {party}")
-                else:
-                    print(f"MISS: {party}")
-    
-    
+                #if partyFolder != None: print(partyNameMatch[1], ": ", partyFolder)
+                
+
 
 if __name__ == "__main__":
+    # Usage: python .\PartyTextExtractor.py yearToQuery monthToQuery - either parameter defaults to datetime.now()
+    # example: python .\PartyTextExtractor.py 2024 5
     yearToQuery = sys.argv[1] if len(sys.argv)>1 else datetime.now().year
-    PartyTextExtractorMain(yearToQuery)
+    monthToQuery = sys.argv[2] if len(sys.argv)>2 else datetime.now().month
+    PartyTextExtractorMain(yearToQuery, monthToQuery)
