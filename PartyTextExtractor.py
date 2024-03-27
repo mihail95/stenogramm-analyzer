@@ -51,5 +51,5 @@ if __name__ == "__main__":
     # Usage: python .\PartyTextExtractor.py yearToQuery monthToQuery - either parameter defaults to datetime.now()
     # example: python .\PartyTextExtractor.py 2024 5
     yearToQuery = sys.argv[1] if len(sys.argv)>1 else datetime.now().year
-    monthToQuery = sys.argv[2] if len(sys.argv)>2 else datetime.now().month
+    monthToQuery = sys.argv[2] if len(sys.argv)>2 else 1
     PartyTextExtractorMain(yearToQuery, monthToQuery)

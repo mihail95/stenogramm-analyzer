@@ -10,7 +10,7 @@ import re
 month_dict = { "януари": 1, "февруари": 2,  "март": 3, "април": 4, "май": 5, "юни": 6,
                "юли": 7, "август": 8, "септември": 9, "октомври": 10, "ноември": 11, "декември": 12}  
 
-def StenogramExtractorMain(yearToQuery):
+def StenogramExtractorMain(yearToQuery, monthToQuery):
     driver = webdriver.Edge()
     driver.get('https://www.parliament.bg/bg/plenaryst')
     wait = WebDriverWait(driver, 30)
@@ -22,28 +22,29 @@ def StenogramExtractorMain(yearToQuery):
 
     for month in month_dict.keys():
         monthNum = month_dict[month]
-        monthLink = GetMonthLink(driver, yearToQuery, month)
-        
-        if monthLink != None:
-            print("Month + MonthNum: ", month, monthNum)
-            print("Month link text ", monthLink.text)
-            if not os.path.exists(f"{yearToQuery}/{monthNum}"):
-                os.makedirs(f"{yearToQuery}/{monthNum}")
-            wait.until(EC.element_to_be_clickable(monthLink)).click()
-        else: continue
-
-        for date in range(1, 32):
-            wait.until(EC.presence_of_element_located((By.XPATH, f"//span[contains(text(), '{month} {yearToQuery}')]")))
-            wait.until(EC.presence_of_element_located((By.XPATH, f"//a[contains(text(), '/{monthNum:02}/{yearToQuery}')]")))
+        if (monthNum >= int(monthToQuery)):
+            monthLink = GetMonthLink(driver, yearToQuery, month)
             
-            filePath = f"{yearToQuery}/{monthNum}"
-            stenogramLink = GetStenogramLink(driver, yearToQuery, monthNum, date)
-            if stenogramLink != None:
-                wait.until(EC.element_to_be_clickable(stenogramLink)).click()
-                wait.until(EC.text_to_be_present_in_element((By.CLASS_NAME, "mb-3"), f'{date:02}/{monthNum:02}/{yearToQuery}'))
-                SaveStenogramText(driver, filePath)
-                driver.back()
+            if monthLink != None:
+                print("Month + MonthNum: ", month, monthNum)
+                print("Month link text ", monthLink.text)
+                if not os.path.exists(f"{yearToQuery}/{monthNum}"):
+                    os.makedirs(f"{yearToQuery}/{monthNum}")
+                wait.until(EC.element_to_be_clickable(monthLink)).click()
             else: continue
+
+            for date in range(1, 32):
+                wait.until(EC.presence_of_element_located((By.XPATH, f"//span[contains(text(), '{month} {yearToQuery}')]")))
+                wait.until(EC.presence_of_element_located((By.XPATH, f"//a[contains(text(), '/{monthNum:02}/{yearToQuery}')]")))
+                
+                filePath = f"{yearToQuery}/{monthNum}"
+                stenogramLink = GetStenogramLink(driver, yearToQuery, monthNum, date)
+                if stenogramLink != None:
+                    wait.until(EC.element_to_be_clickable(stenogramLink)).click()
+                    wait.until(EC.text_to_be_present_in_element((By.CLASS_NAME, "mb-3"), f'{date:02}/{monthNum:02}/{yearToQuery}'))
+                    SaveStenogramText(driver, filePath)
+                    driver.back()
+                else: continue
 
 
 def GetStenogramLink(driver, yearToQuery, monthNum, date):
@@ -89,5 +90,8 @@ def SaveStenogramText(driver, filePath):
         wFile.write(stenogramText.get_attribute('innerHTML'))
 
 if __name__ == "__main__":
+    # Usage: python .\StenogramExtractor.py yearToQuery monthToQuery - year parameter defaults to datetime.now(), month defaults to January
+    # example: python .\StenogramExtractor.py 2024 5
     yearToQuery = sys.argv[1] if len(sys.argv)>1 else datetime.now().year
-    StenogramExtractorMain(yearToQuery)
+    monthToQuery = sys.argv[2] if len(sys.argv)>2 else 1
+    StenogramExtractorMain(yearToQuery, monthToQuery)
