@@ -28,13 +28,14 @@ def PartyTextExtractorMain(yearToQuery, monthToQuery):
 
     fileNames = GetFileNames(yearToQuery, monthToQuery)
     for fileName in fileNames:
-        print(fileName)
         with open(fileName, encoding = 'utf-8') as file:
+            # Find a speech made from a party
             # Regex: "^([А-Я\s]+)(\(.*\))*:([\S\s]*?)(?=^([А-Я\s]+)(\(.*\))*:|\Z)"gm
             for party in re.findall(r"^([А-Я\s]+)(\(.*\))*:([\S\s]*?)(?=^([А-Я\s]+)(\(.*\))*:|\Z)", file.read(), re.M):
                 partyFolder = None
                 partyNamePattern = r'^\(([А-Яа-я -]+),*.*\)$'
                 partyNameMatch = re.search(partyNamePattern, party[1])
+                # Use levenstein to try and find a matching party name
                 if (partyNameMatch != None and partyNameMatch[1].upper() not in partyDict.keys()):
                     cutoff = 2
                     partyNameDistanceDict = {partyName : distance(partyNameMatch[1].upper(), partyName, score_cutoff=cutoff, weights=(0,1,5)) for partyName in partyDict}
@@ -43,7 +44,11 @@ def PartyTextExtractorMain(yearToQuery, monthToQuery):
                 elif (partyNameMatch != None and partyNameMatch[1].upper() in partyDict.keys()):
                     partyFolder = partyDict[partyNameMatch[1].upper()]
 
-                #if partyFolder != None: print(partyNameMatch[1], ": ", partyFolder)
+                # If a match is found, write the text to the corresponding file
+                if partyFolder != None: 
+                    with open(f'party-texts/{partyFolder}.txt', 'a+', encoding = 'utf-8') as writeFile:
+                        writeFile.write(party[2].replace("<br>", "").strip() + '\n\n')
+
                 
 
 
