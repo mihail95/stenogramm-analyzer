@@ -1,1 +1,5 @@
 *.txt
+language_components
+*.pickle
+.venv
+!requirements.txt

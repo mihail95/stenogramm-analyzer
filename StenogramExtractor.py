@@ -82,12 +82,13 @@ def SaveStenogramText(driver, filePath):
     stenogramDateElement = driver.find_element(By.CLASS_NAME, "mb-3").text
     stenogramDatePattern = r"(\d{2})/(\d{2})/(\d{4})"
     stenogramDateMatch = re.search(stenogramDatePattern, stenogramDateElement)
-    stenogramDate = f"{stenogramDateMatch[1]}-{stenogramDateMatch[2]}-{stenogramDateMatch[3]}"
-    stenogramText = driver.find_element(By.CLASS_NAME, "mt-4")
+    if stenogramDateMatch:
+        stenogramDate = f"{stenogramDateMatch[1]}-{stenogramDateMatch[2]}-{stenogramDateMatch[3]}"
+        stenogramText = driver.find_element(By.CLASS_NAME, "mt-4")
 
-    print(f"Saving stenogram under: {filePath}/steno-{stenogramDate}.txt")
-    with open(f"{filePath}/steno-{stenogramDate}.txt", "w", encoding="utf-8") as wFile:
-        wFile.write(stenogramText.get_attribute('innerHTML'))
+        print(f"Saving stenogram under: {filePath}/steno-{stenogramDate}.txt")
+        with open(f"{filePath}/steno-{stenogramDate}.txt", "w", encoding="utf-8") as wFile:
+            wFile.write(stenogramText.get_attribute('innerHTML'))
 
 if __name__ == "__main__":
     # Usage: python .\StenogramExtractor.py yearToQuery monthToQuery - year parameter defaults to datetime.now(), month defaults to January

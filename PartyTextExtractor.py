@@ -26,6 +26,9 @@ def PartyTextExtractorMain(yearToQuery, monthToQuery):
     # reconstructing the data as a dictionary 
     partyDict = json.loads(partyData)
 
+    speechCounts = { party: 0 for party in partyDict.values() }
+    unofficialSpeechCounts = { party: 0 for party in partyDict.values() }
+
     fileNames = GetFileNames(yearToQuery, monthToQuery)
     for fileName in fileNames:
         with open(fileName, encoding = 'utf-8') as file:
@@ -43,13 +46,21 @@ def PartyTextExtractorMain(yearToQuery, monthToQuery):
                     if minimum[1] < cutoff + 1: partyFolder = partyDict[minimum[0]]                    
                 elif (partyNameMatch != None and partyNameMatch[1].upper() in partyDict.keys()):
                     partyFolder = partyDict[partyNameMatch[1].upper()]
-
+                
                 # If a match is found, write the text to the corresponding file
                 if partyFolder != None: 
-                    with open(f'party-texts/{partyFolder}.txt', 'a+', encoding = 'utf-8') as writeFile:
+                    if 'от място' in party[1]:
+                        unofficialSpeechCounts[partyFolder] += 1
+                    speechCounts[partyFolder] += 1
+
+                    with open(f'party-texts/{partyFolder}_from_{monthToQuery}_{yearToQuery}_to_{datetime.now().month}_{datetime.now().year}.txt', 'a+', encoding = 'utf-8') as writeFile:
                         writeFile.write(party[2].replace("<br>", "").strip() + '\n\n')
 
-                
+    with open(f'party-texts/speech_counts_from_{monthToQuery}_{yearToQuery}_to_{datetime.now().month}_{datetime.now().year}.csv', 'w', encoding = 'utf-8') as writeFile:
+        writeFile.write("party\tall_speeches\tunofficial_speeches\tunofficial_official_ratio\n")
+        for party, speechCount in speechCounts.items():
+            ratio = round(unofficialSpeechCounts[party] / speechCount, 4)
+            writeFile.write(f"{party}\t{speechCount}\t{unofficialSpeechCounts[party]}\t{ratio*100}\n")
 
 
 if __name__ == "__main__":
